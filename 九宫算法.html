@@ -1,0 +1,320 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>九宫格游戏</title>
+<style type="text/css">
+table {
+	width: 450px;
+	height: 450px;
+	margin: 0 auto;
+	border: 1px solid #000;
+	border-width: 2px 0 0 2px;
+}
+
+table td {
+	width: 50px;
+	height: 50px;
+	text-align: center;
+	vertical-align: middle;
+	font-size: 40px;
+	font-weight: bolder;
+	border-left: none;
+	border-top: none;
+}
+
+td div {
+	width: 41px;
+	margin-left:4px;
+	margin-right:4px;
+	height:49px;
+	overflow: auto;
+	text-align: center;
+	vertical-align: middle;
+}
+
+.r-strong {
+	border-right: 2px solid #000;
+}
+
+.r-normal {
+	border-right: 1px solid #ccc;
+}
+
+.b-strong {
+	border-bottom: 2px solid #000;
+}
+
+.b-normal {
+	border-bottom: 1px solid #ccc;
+}
+
+.red {
+	color: red;
+}
+</style>
+</head>
+<body>
+<div id="status"></div>
+<script type="text/javascript">
+function w(s){document.write(s);}
+function $$(id){return document.getElementById(id);}
+w('<table cellspacing="0" cellpadding="0" >');
+var class_r = "";
+var class_b = "";
+ for(var i=0;i<9;i++){
+	 w('<tr>');
+	 class_b = i%3==2?"b-strong":"b-normal";
+	 for(var j=0;j<9;j++){
+		 class_r = j%3==2?"r-strong":"r-normal";
+		 w('<td class="'+class_r+" "+class_b+'"><div contenteditable="true" id="no_'+i+'_'+j+'" onmouseover="showMay('+i+','+j+')"></div></td>');
+	 }
+	 w('<tr>');
+ }
+ w('</table> ');
+ var current = [];
+ var old = [];
+ function showMay(i,j){
+	 //alert
+	 var may = getIJMay(i,j);
+	 $$("status").innerHTML=may;
+ }
+ function clone(ar){
+	 var re = [];
+	 for(var k=0;k<ar.length;k++){
+		 if(typeof ar[k]=='object'){
+			 re.push(clone(ar[k]));
+		 }else{
+			 re.push(ar[k]);
+		 }
+	 }
+	 return re;
+ }
+ function format_array(arr){
+	 var s = "<div style='margin-left:20px;'>[<br/>";
+	 for(var k in arr){
+		 s+=(k+"=>"+(arr[k])+"<br/>");
+	 }
+	 s += "<br/>]</div>";
+	 return s;
+ }
+ //last参数表明是否是最后填写
+ function fillNineSquared(arr,last)
+ {
+	 for(var i=0;i<9;i++){
+		 for(var j=0;j<9;j++){
+			 if(arr[i] && arr[i][j] && arr[i][j]>=1 && arr[i][j]<=9){
+				    if(last && (!(old[i] && old[i][j] && old[i][j]>0 && old[i][j]<=9))){
+				    	setIJ(i,j,'<span class="red">'+arr[i][j]+"</span>");
+			    	    continue;
+			        }
+			        setIJ(i,j,arr[i][j])
+			  }else
+				    setIJ(i,j,"");
+		 }
+	 }
+ }
+ 
+ //取得第i行，j列的值
+ function getIJ(i,j,tmp_val){
+	 try{
+		 return tmp_val[i][j];
+	 }catch(e){
+		 var id = "no_"+i+"_"+j;
+		 if($$(id)){
+			 var number = $$(id).innerHTML;
+			 if(number>0 && number<10){
+				 return number;
+			 }else if(/([1-9])/.exec(number)){
+				 var re = /([1-9])/.exec(number) ;
+				 return re[0];
+			 }
+		 }
+		 return false;
+	}
+ }
+ //给第i行，j列设置值
+ function setIJ(i,j,v){
+	 var id = "no_"+i+"_"+j;
+	 if($$(id))
+		 $$(id).innerHTML = v;
+	 //else
+	//	 alert('set时：'+id);
+ }
+ //取得第i+1行,j+1列可能的取值
+ function getIJMay(i,j,tmp_val){
+	 function getOther(ij){
+		 ij = parseInt(ij);
+		 var r = ij%3;
+		 var o = [];
+		 switch(r){
+		       case 0:
+		    	   o = [ij+1,ij+2];
+		       break;
+		       case 1:
+		    	   o = [ij-1,ij+1];
+			   break;
+		       default:
+		    	   o = [ij-2,ij-1];
+		}
+		return o;
+	 }
+	 var usedValue = []; //已经用了的数
+	 var canUsedValue = [];//可以用的数
+	 for(var m=0;m<9;m++){
+		 var r = getIJ(i,m,tmp_val);
+		 if(r>0)
+		    usedValue[r] = true;
+		 var c = getIJ(m,j,tmp_val);
+		 if(c>0)
+		    usedValue[c] = true;
+	 }
+	 var oi = getOther(i);
+	 var oj = getOther(j);
+	 for(var p=0;p<2;p++){
+		 for(var q=0;q<2;q++){
+			 var c = getIJ(oi[p],oj[q],tmp_val);
+			 if(c>0)
+			    usedValue[c] = true;
+		 }
+	 }
+	 for(var k=1;k<=9;k++){
+		 if(usedValue[k]!==true){
+			 canUsedValue.push(k);
+		 }
+	 }
+	 return canUsedValue;
+ }
+ 
+ //计算所有行列的所有可能取值
+ function calcSquared()
+ {
+	 //取得老数据的值
+	 for(var i=0;i<9;i++){
+		 old[i] = [];
+		 for(var j=0;j<9;j++){
+			 old[i][j] = getIJ(i,j);
+			 setIJ(i,j,old[i][j]?old[i][j]:'');
+		 }
+	 }
+	 var is_roop_all = false;
+	 current = clone(old);
+	 //递归函数，查找有可能的值中一一匹配
+	 function T(i,j){
+		 var is_old = false;
+		 var deep_calc;
+		 var may; //当前行列可能的取值
+		 if(old[i]&&old[i][j]&&old[i][j]>0){
+			 may = [old[i][j]];
+			 is_old = true;
+		 }else{
+			 may = getIJMay(i,j,current);
+		 }
+		 if(may.length==0){
+		 	 return false;
+	     }
+		 for(var k=0;k<may.length;k++){
+			   current[i][j] = may[k];
+			   if(i==8&&j==8){
+					 fillNineSquared(current,true);
+					 //$$('current_show').innerHTML=format_array(current);
+					 is_roop_all = true;
+					 return;
+			    }else{
+			    	if(!is_old){
+			    	    //setIJ(i,j,'<span class="red">'+may[k]+"</span>");
+			    	}
+					if(j==8){
+						T(i+1,0);
+					}else{
+						T(i,j+1);
+					}
+					if(is_roop_all){
+						 return;
+					}
+				}
+		}
+		
+		if(!is_old){ //如果不是原始数据，并且不是循环完毕
+			current[i][j]=0;
+			setIJ(i,j,'');
+		}
+		return true;
+	}
+	T(0,0);
+	if(is_roop_all==false){
+		alert("此题无解！");
+	}
+}
+</script>
+
+<script type="text/javascript">
+    data1 = [
+           [8],
+           [0,0,3,6],
+           [0,7,0,0,9,0,2],
+           [0,5,0,0,0,7],
+           [0,0,0,0,4,5,7],
+           [0,0,0,1,0,0,0,3],
+           [0,0,1,0,0,0,0,6,8],
+           [0,0,8,5,0,0,0,1],
+           [0,9,0,0,0,0,4]
+          ];
+    data2 = [
+             [0,0,4,0,1,6,2],
+             [6,0,0,0,4,0,0,7],
+             [0,0,0,7,3,0,0,8],
+             [0,0,3,8,0,0,0,0,7],
+             [4,0,0,0,0,0,0,5],
+             [0,0,2,1],
+             [1,0,0,5,0,0,0,0,8],
+             [0,0,6,0,2],
+             [0,0,0,0,0,0,0,0,4]
+            ];
+    data3 = [
+			 [8,0,0,0,6],
+			 [0,0,5,8,0,0,0,3,0],
+			 [0,0,7,3,0,1,0,8],
+			 [0,7,0,0,8,2],
+			 [0,0,0,0,0,0,0,0,4],
+			 [0,0,1,0,0,0,6,5,0],
+			 [2,0,6,0,0,0,8,0,1],
+             [5],
+             [0,0,0,6,0,0,0,0,3]
+            ];
+    data2 = [
+			 [8,0,0,0,6],
+			 [0,0,0,0,0,0,0,0,0],
+			 [0,0,0,0,0,0,0,0,0],
+			 [0,0,0,0,0,0,0,0,0],
+			 [0,0,0,0,0,0,0,0,0],
+			 [0,0,0,0,0,0,0,0,0],
+			 [0,0,0,0,0,0,0,0,0],
+             [0,0,0,0,0,0,0,0,0],
+             [0,0,0,0,0,0,0,0,0]
+            ];
+    datax = [
+			 [0,0,7,3,0,1,4],
+			 [0,4,5,0,0,0,1,2,0],
+			 [9,2,0,0,0,0,0,3,8],
+			 [0,0,0,8,0,7,0,0,0],
+			 [0,5,0,0,0,0,0,7,0],
+			 [0,0,0,4,0,9,0,0,0],
+			 [7,3,0,0,0,0,0,6,4],
+             [0,6,9,0,0,0,3,5,0],
+             [0,0,2,6,0,3,9]
+            ];
+    
+fillNineSquared(datax);
+</script>
+<div style="position: absolute;left:20px;top:20px;">
+<input type="button" onclick="calcSquared();" value="开始计算" />
+<br/>
+<input type="button" onclick="fillNineSquared(old);" value="再算一遍" />
+<br/>
+<input type="button" onclick="fillNineSquared([]);" value="清空数据" />
+</div>
+<div style="position: absolute;left:20px;top:130px;" id="current_show">
+</div>
+</body>
+</html>
